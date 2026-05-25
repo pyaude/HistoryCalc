@@ -1,27 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'core/theme/app_theme.dart';
-import 'presentation/screens/home_screen.dart';
+import 'core/storage/history_storage.dart';
+import 'core/providers/calculator_provider.dart';
+import 'presentation/screens/calculator_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Initialize Hive for history persistence
+  final historyStorage = HistoryStorage();
+  await historyStorage.init();
+
   runApp(
-    const ProviderScope(
-      child: TemplateApp(),
+    ProviderScope(
+      overrides: [
+        historyStorageProvider.overrideWithValue(historyStorage),
+      ],
+      child: const HistoryCalcApp(),
     ),
   );
 }
 
-class TemplateApp extends ConsumerWidget {
-  const TemplateApp({super.key});
+class HistoryCalcApp extends ConsumerWidget {
+  const HistoryCalcApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
-      title: 'FlutterApp',
+      title: 'HistoryCalc',
       theme: AppTheme.darkTheme,
-      home: const HomeScreen(),
+      home: const CalculatorScreen(),
       debugShowCheckedModeBanner: false,
     );
   }

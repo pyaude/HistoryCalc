@@ -1,0 +1,169 @@
+import os, sys, json, time, zipfile, urllib.request, urllib.error, subprocess, re
+
+def update_status(msg):
+    print(msg)
+    os.makedirs(".pyaude/web-preview", exist_ok=True)
+    html = f'''<html><head><meta http-equiv="refresh" content="3"><meta charset="UTF-8"></head>
+    <body style="font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background-color: #1e1e2e; color: #cdd6f4; margin: 0;">
+        <div style="background: #313244; padding: 2.5rem; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); text-align: center; max-width: 450px; width: 90%;">
+            <div style="width: 48px; height: 48px; border: 4px solid #45475a; border-top: 4px solid #89b4fa; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1.5rem auto;"></div>
+            <h2 style="margin: 0 0 1rem 0; color: #89b4fa; font-size: 1.5rem; font-weight: 600;">Cloud Compilation</h2>
+            <div style="background: #181825; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; color: #a6adc8;">{msg}</p>
+            </div>
+            <p style="margin: 0; font-size: 0.8rem; color: #7f849c;">Page auto-refreshes every 3 seconds</p>
+        </div>
+        <style>@keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}</style>
+    </body></html>'''
+    with open(".pyaude/web-preview/index.html", "w", encoding="utf-8") as f:
+        f.write(html)
+
+def run_cmd(cmd):
+    try:
+        subprocess.run(cmd, shell=True, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Command failed: {cmd}\n{e}")
+
+def main():
+    # 1. Ensure preview directory exists and start HTTP server
+    os.makedirs(".pyaude/web-preview", exist_ok=True)
+    subprocess.Popen(["python3", "-m", "http.server", "8080"], cwd=".pyaude/web-preview", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    # 2. Extract Repo and Token
+    github_token = os.environ.get("GITHUB_TOKEN")
+    if not github_token:
+        update_status("Error: GITHUB_TOKEN environment variable is not set.")
+        sys.exit(1)
+        
+    repo_url = subprocess.check_output("git remote get-url origin", shell=True).decode().strip()
+    m = re.search(r"github\.com[:/]([^/]+/[^/.]+)", repo_url)
+    repo = m.group(1) if m else None
+    if not repo:
+        sys.exit(1)
+    if repo.endswith(".git"):
+        repo = repo[:-4]
+
+    headers = {
+        "Authorization": f"Bearer {github_token}",
+        "Accept": "application/vnd.github.v3+json",
+        "X-GitHub-Api-Version": "2022-11-28"
+    }
+
+    # 3. Check for existing artifacts
+    def download_latest_artifact():
+        try:
+            req = urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/runs?status=success", headers=headers)
+            with urllib.request.urlopen(req) as response:
+                data = json.loads(response.read().decode())
+            runs = data.get("workflow_runs", [])
+            if not runs:
+                return False
+                
+            for run in runs:
+                req = urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/runs/{run['id']}/artifacts", headers=headers)
+                with urllib.request.urlopen(req) as response:
+                    artifacts_data = json.loads(response.read().decode())
+                web_artifacts = [a for a in artifacts_data.get("artifacts", []) if a["name"] == "web-build"]
+                if web_artifacts:
+                    artifact_id = web_artifacts[0]["id"]
+                    
+                    # Prevent re-downloading the same artifact
+                    artifact_cache_file = ".pyaude/last_artifact_id.txt"
+                    if os.path.exists(artifact_cache_file):
+                        with open(artifact_cache_file, "r") as f:
+                            cached_id = f.read().strip()
+                        if cached_id == str(artifact_id) and os.path.exists(".pyaude/web-preview/index.html"):
+                            # We already have it and it's valid
+                            print("Artifact already downloaded and cached.")
+                            return True
+                    
+                    update_status("Downloading latest web-build artifact...")
+                    req = urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/artifacts/{artifact_id}/zip", headers=headers)
+                    with urllib.request.urlopen(req) as response:
+                        with open(".pyaude/web-build.zip", "wb") as out_file:
+                            out_file.write(response.read())
+                            
+                    update_status("Extracting static web files...")
+                    with zipfile.ZipFile(".pyaude/web-build.zip", 'r') as zip_ref:
+                        zip_ref.extractall(".pyaude/web-preview")
+                    os.remove(".pyaude/web-build.zip")
+                    
+                    with open(artifact_cache_file, "w") as f:
+                        f.write(str(artifact_id))
+                    
+                    return True
+            return False
+        except Exception as e:
+            print(f"Error checking artifacts: {e}")
+            return False
+
+    if download_latest_artifact():
+        print("Successfully loaded existing artifact. Launching preview!")
+        sys.exit(0)
+
+    # 4. Fallback: No existing artifacts. Automatically trigger workflow
+    update_status("No existing build artifacts found. Triggering initial web build pipeline...")
+    
+    # Inject workflow if it doesn't exist
+    os.makedirs(".github/workflows", exist_ok=True)
+    workflow_path = ".github/workflows/build-web.yml"
+    if not os.path.exists(workflow_path):
+        with open(workflow_path, "w") as f:
+            f.write('''name: Build Flutter Web\n\non:\n  workflow_dispatch:\n    inputs:\n      ref:\n        description: 'Branch to build'\n        required: false\n        default: 'main'\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout code\n        uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.inputs.ref || 'main' }}\n      - name: Set up Flutter\n        uses: subosito/flutter-action@v2\n        with:\n          channel: 'stable'\n          cache: true\n      - name: Install dependencies\n        run: flutter pub get\n      - name: Build Web\n        run: flutter build web --release\n      - name: Upload Web Artifact\n        uses: actions/upload-artifact@v4\n        with:\n          name: web-build\n          path: build/web\n          retention-days: 1''')
+        run_cmd("git add .")
+        run_cmd("git commit -m 'chore: add web build workflow'")
+        
+    branch = subprocess.check_output("git rev-parse --abbrev-ref HEAD", shell=True).decode().strip()
+    try:
+        run_cmd(f"git push origin {branch}")
+    except Exception:
+        pass # Push might fail if nothing to push, that's fine
+
+    try:
+        req = urllib.request.Request(
+            f"https://api.github.com/repos/{repo}/actions/workflows/build-web.yml/dispatches",
+            data=json.dumps({"ref": branch}).encode('utf-8'),
+            headers=headers,
+            method="POST"
+        )
+        urllib.request.urlopen(req)
+    except Exception as e:
+        update_status(f"Error triggering pipeline: {e}")
+        sys.exit(1)
+        
+    time.sleep(4)
+    try:
+        req = urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/runs?event=workflow_dispatch&per_page=1", headers=headers)
+        resp = urllib.request.urlopen(req)
+        run_id = json.loads(resp.read().decode())["workflow_runs"][0]["id"]
+    except Exception:
+        run_id = "unknown"
+
+    start_time = time.time()
+    while True:
+        elapsed = int(time.time() - start_time)
+        update_status(f"Compiling initial Flutter Web...<br><span style='font-size:0.8rem;color:#7f849c'>Elapsed time: {elapsed}s | Run ID: {run_id}</span><br><br><span style='font-size:0.85rem;color:#a6adc8'>Subsequent previews will load instantly. You can manually compile future changes in the CI/CD tab.</span>")
+        
+        if run_id != "unknown":
+            try:
+                req = urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}", headers=headers)
+                resp = urllib.request.urlopen(req)
+                run_data = json.loads(resp.read().decode())
+                if run_data["status"] == "completed":
+                    if run_data["conclusion"] != "success":
+                        update_status(f"Workflow failed: {run_data['conclusion']}. Please check CI/CD logs.")
+                        sys.exit(1)
+                    break
+            except Exception:
+                pass
+        time.sleep(5)
+
+    if download_latest_artifact():
+        print("Initial compilation complete. Launching preview!")
+        sys.exit(0)
+    else:
+        update_status("Failed to download artifact after pipeline completion.")
+        sys.exit(1)
+
+if __name__ == '__main__':
+    main()
