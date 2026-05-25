@@ -330,9 +330,9 @@ void main() {
     });
   });
 
-  group('历史记录 - insertFormula', () {
+  group('历史记录 - insertResult', () {
     test('无运算符时插入 → 开始新计算', () {
-      calc.insertFormula('42', 42);
+      calc.insertResult(42);
       expect(calc.currentInput, '42');
       expect(calc.expression, '42');
     });
@@ -340,7 +340,7 @@ void main() {
     test('有运算符时插入 → 参与当前计算', () {
       calc.input('5');
       calc.input('+');
-      calc.insertFormula('10', 10);
+      calc.insertResult(10);
       expect(calc.currentInput, '10');
       expect(calc.expression, '5 + 10');
       calc.input('=');
@@ -352,7 +352,7 @@ void main() {
       calc.input('+');
       calc.input('1');
       calc.input('=');       // _operator = null
-      calc.insertFormula('99', 99);
+      calc.insertResult(99);
       expect(calc.currentInput, '99');
       expect(calc.expression, '99');
     });
@@ -363,7 +363,7 @@ void main() {
       calc.input('3');
       calc.input('=');       // result = 5, _operator = null
       calc.input('+');       // _operator = '+', continues from 5
-      calc.insertFormula('7', 7);
+      calc.insertResult(7);
       expect(calc.expression, '5 + 7');
       calc.input('=');
       expect(calc.currentInput, '12');
@@ -372,22 +372,9 @@ void main() {
     test('输入数字后无运算符插入 → 替换当前输入', () {
       calc.input('9');
       calc.input('9');
-      calc.insertFormula('1', 1);
+      calc.insertResult(1);
       expect(calc.currentInput, '1');
       expect(calc.expression, '1');
-    });
-
-    test('插入公式算式参与当前计算', () {
-      calc.input('1');
-      calc.input('2');
-      calc.input('+');
-      calc.insertFormula('5 + 3', 8);
-      // 显示算式 "12 + 5 + 3"
-      expect(calc.expression, '12 + 5 + 3');
-      expect(calc.currentInput, '5 + 3');
-      // 按=使用结果值计算: 12 + 8 = 20
-      calc.input('=');
-      expect(calc.currentInput, '20');
     });
   });
 
@@ -437,12 +424,12 @@ void main() {
       calc.input('=');
       expect(calc.currentInput, '8'); // 100 × 0.08 = 8
 
-      // Start new calculation and insert previous formula
+      // Start new calculation and insert previous result
       calc.input('5');
       calc.input('0');
       calc.input('0');
       calc.input('+');
-      calc.insertFormula('100 × 0.08', 8);
+      calc.insertResult(8);
       calc.input('=');
       expect(calc.currentInput, '508');
     });
