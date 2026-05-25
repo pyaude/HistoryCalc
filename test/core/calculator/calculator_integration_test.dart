@@ -104,12 +104,11 @@ void main() {
       expect(calc.currentInput, '20');
     });
 
-    test('场景: insertFormula 在表达式中间', () {
+    test('场景: insertResult 在表达式中间', () {
       calc.input('1');
       calc.input('0');
       calc.input('+');
-      // Insert formula from history
-      calc.insertFormula('5', 5);
+      calc.insertResult(5);
       expect(calc.currentInput, '5');
       expect(calc.expression, '10 + 5');
 
@@ -185,27 +184,26 @@ void main() {
       // Should not have generated a history entry
     });
 
-    test('insertFormula 替换刚计算的结果', () {
+    test('insertResult 替换刚计算的结果', () {
       calc.input('1');
       calc.input('+');
       calc.input('1');
       calc.input('=');
-      calc.insertFormula('99', 99);
+      calc.insertResult(99);
       expect(calc.currentInput, '99');
       expect(calc.expression, '99');
     });
 
-    test('= 后按运算符再插历史公式 → 参与计算', () {
+    test('= 后按运算符再插历史 → 参与计算', () {
       calc.input('2');
       calc.input('+');
       calc.input('3');
       calc.input('=');        // 5
       calc.input('×');        // 延续: 5 × ...
-      calc.insertFormula('2 + 2', 4);
-      // 显示算式 "5 × 2 + 2"，计算用结果值 4
-      expect(calc.expression, '5 × 2 + 2');
+      calc.insertResult(4);
+      expect(calc.expression, '5 × 4');
       calc.input('=');
-      expect(calc.currentInput, '20'); // 5 × 4 = 20
+      expect(calc.currentInput, '20');
     });
   });
 }
