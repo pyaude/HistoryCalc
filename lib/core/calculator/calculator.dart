@@ -186,9 +186,11 @@ class Calculator {
     final first = _firstOperand ?? 0;
     final result = _compute(first, second, _operator!);
 
-    _lastExpression = '${_formatNumber(first)} ${_operator!} ${_formatNumber(second)} = ${_formatNumber(result)}';
+    // Display: full equation (e.g. "12 + 5 = 17")
+    _expression = '${_formatNumber(first)} ${_operator!} ${_formatNumber(second)} = ${_formatNumber(result)}';
+    // History: formula only (e.g. "12 + 5") — not a "finished sentence"
+    _lastExpression = '${_formatNumber(first)} ${_operator!} ${_formatNumber(second)}';
     _lastResult = result;
-    _expression = _lastExpression;
     _currentInput = _formatNumber(result);
     _firstOperand = null;
     _operator = null;
@@ -210,9 +212,11 @@ class Calculator {
       return;
     }
     final result = _sqrt(value);
-    _lastExpression = '√($value) = ${_formatNumber(result)}';
+    // Display: full equation ("√(16) = 4")
+    _expression = '√($value) = ${_formatNumber(result)}';
+    // History: formula only ("√(16)")
+    _lastExpression = '√($value)';
     _lastResult = result;
-    _expression = _lastExpression;
     _currentInput = _formatNumber(result);
     _justEvaluated = true;
     _firstOperand = null;
@@ -223,9 +227,11 @@ class Calculator {
   void _onSquare() {
     final value = double.tryParse(_currentInput) ?? 0;
     final result = value * value;
-    _lastExpression = '($value)² = ${_formatNumber(result)}';
+    // Display: full equation ("(4)² = 16")
+    _expression = '($value)² = ${_formatNumber(result)}';
+    // History: formula only ("(4)²")
+    _lastExpression = '($value)²';
     _lastResult = result;
-    _expression = _lastExpression;
     _currentInput = _formatNumber(result);
     _justEvaluated = true;
     _firstOperand = null;

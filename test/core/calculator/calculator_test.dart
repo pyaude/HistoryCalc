@@ -312,7 +312,7 @@ void main() {
       calc.input('=');
       final eval = calc.lastEvaluation;
       expect(eval, isNotNull);
-      expect(eval!.expression, '12 + 5 = 17');
+      expect(eval!.expression, '12 + 5');
       expect(eval.result, 17);
     });
 

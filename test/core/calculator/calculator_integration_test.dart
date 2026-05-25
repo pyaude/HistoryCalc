@@ -25,7 +25,7 @@ void main() {
       final first = calc.lastEvaluation;
       expect(first, isNotNull);
       expect(first!.result, 49.9);
-      expect(first.expression, '19.9 + 30 = 49.9');
+      expect(first.expression, '19.9 + 30');
 
       // Second: use insertResult from "history" = 49.9
       calc.input('+');
