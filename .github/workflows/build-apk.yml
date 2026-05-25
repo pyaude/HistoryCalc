@@ -1,0 +1,61 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: 'API URL for the backend'
+        required: false
+        default: 'https://api.example.com'
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate debug keystore
+        run: |
+          mkdir -p ~/.config/.android
+          keytool -genkey -v -keystore ~/.config/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "C=US, O=Android, CN=Android Debug"
+
+      - name: Build APK
+        run: flutter build apk --release --dart-define=API_URL=${{ github.event.inputs.api_url }}
+
+      - name: Zip Build Artifacts
+        run: |
+          mkdir -p release-bundle
+          # 复制 APK
+          cp build/app/outputs/flutter-apk/app-release.apk release-bundle/HistoryCalc-release.apk
+          # 复制混淆映射文件（如果有，用于追踪崩溃堆栈）
+          if [ -f build/app/outputs/mapping/release/mapping.txt ]; then
+            cp build/app/outputs/mapping/release/mapping.txt release-bundle/mapping.txt
+          fi
+          # 进行压缩
+          cd release-bundle
+          zip -r ../HistoryCalc-release-bundle.zip .
+
+      - name: Upload Zip Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HistoryCalc-release-bundle.zip
+          path: HistoryCalc-release-bundle.zip
