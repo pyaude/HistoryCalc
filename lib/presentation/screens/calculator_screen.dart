@@ -68,16 +68,15 @@ class CalculatorScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
-                children: _functionBar
-                    .map(
-                      (label) => CalcButton(
-                        label: label,
-                        type: CalcButtonType.function,
-                        onTap: () => notifier.input(label),
-                      ),
-                    )
-                    .toList()
-                  ..add(const Spacer(flex: 2)), // right-align the 2 buttons
+                children: [
+                  for (final label in _functionBar)
+                    CalcButton(
+                      label: label,
+                      type: CalcButtonType.function,
+                      onTap: () => notifier.input(label),
+                    ),
+                  const Spacer(flex: 2),
+                ],
               ),
             ),
 
