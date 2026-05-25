@@ -75,23 +75,22 @@ class Calculator {
     }
   }
 
-  /// Insert a formula from history into the current expression.
-  ///
-  /// The formula string (e.g. "5 + 3") is displayed, but its numeric
-  /// result is used for actual computation — this makes the formula
-  /// visually "participate" in the current calculation.
-  void insertFormula(String formula, double result) {
+  /// Insert a result value from history into the current expression.
+  /// - Has pending operator → becomes second operand (participates)
+  /// - No pending operator → replaces current input (starts fresh)
+  void insertResult(double value) {
+    final str = _formatNumber(value);
+    _pendingFormulaValue = null;
+
     if (_operator != null) {
-      _currentInput = formula;
-      _pendingFormulaValue = result;
+      _currentInput = str;
       _waitingForSecondOperand = false;
       _justEvaluated = false;
       _updateExpressionWithCurrent();
     } else {
       _reset();
-      _currentInput = formula;
-      _pendingFormulaValue = result;
-      _expression = formula;
+      _currentInput = str;
+      _expression = str;
     }
   }
 
