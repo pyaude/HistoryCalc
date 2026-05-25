@@ -9,6 +9,7 @@ class Calculator {
   double? _firstOperand;
   String? _operator;
   bool _waitingForSecondOperand = false;
+  double? _pendingFormulaValue; // for formula-as-display, value-as-computation
 
   // --- Evaluation result tracking ---
   bool _justEvaluated = false;
@@ -74,27 +75,23 @@ class Calculator {
     }
   }
 
-  /// Insert a numeric result from history into the current expression.
+  /// Insert a formula from history into the current expression.
   ///
-  /// Behavior depends on context:
-  /// - If an operator is pending (e.g. user typed "12 + "), the result
-  ///   becomes the second operand → **participates in current calculation**.
-  /// - If no operator is pending, the result replaces the current input
-  ///   → **starts a fresh calculation**.
-  void insertResult(double value) {
-    final str = _formatNumber(value);
-
+  /// The formula string (e.g. "5 + 3") is displayed, but its numeric
+  /// result is used for actual computation — this makes the formula
+  /// visually "participate" in the current calculation.
+  void insertFormula(String formula, double result) {
     if (_operator != null) {
-      // Mid-calculation: insert as second operand
-      _currentInput = str;
+      _currentInput = formula;
+      _pendingFormulaValue = result;
       _waitingForSecondOperand = false;
       _justEvaluated = false;
       _updateExpressionWithCurrent();
     } else {
-      // No pending operator: start fresh
       _reset();
-      _currentInput = str;
-      _expression = str;
+      _currentInput = formula;
+      _pendingFormulaValue = result;
+      _expression = formula;
     }
   }
 
@@ -141,7 +138,8 @@ class Calculator {
 
     if (_operator != null && !_waitingForSecondOperand) {
       // Chain: calculate intermediate result
-      final second = double.tryParse(_currentInput) ?? 0;
+      final second = _pendingFormulaValue ?? double.tryParse(_currentInput) ?? 0;
+      _pendingFormulaValue = null;
       final result = _compute(_firstOperand ?? 0, second, _operator!);
       _firstOperand = result;
       _expression = '${_formatNumber(result)} $op ';
@@ -177,8 +175,10 @@ class Calculator {
 
     double second;
     if (_waitingForSecondOperand) {
-      // User pressed = without entering second operand, use first
       second = _firstOperand ?? 0;
+    } else if (_pendingFormulaValue != null) {
+      second = _pendingFormulaValue!;
+      _pendingFormulaValue = null;
     } else {
       second = double.tryParse(_currentInput) ?? 0;
     }
@@ -199,7 +199,8 @@ class Calculator {
   }
 
   void _onSquareRoot() {
-    final value = double.tryParse(_currentInput) ?? 0;
+    final value = _pendingFormulaValue ?? double.tryParse(_currentInput) ?? 0;
+    _pendingFormulaValue = null;
     if (value < 0) {
       _currentInput = 'Error';
       _expression = 'Error';
@@ -225,7 +226,8 @@ class Calculator {
   }
 
   void _onSquare() {
-    final value = double.tryParse(_currentInput) ?? 0;
+    final value = _pendingFormulaValue ?? double.tryParse(_currentInput) ?? 0;
+    _pendingFormulaValue = null;
     final result = value * value;
     // Display: full equation ("(4)² = 16")
     _expression = '($value)² = ${_formatNumber(result)}';
@@ -242,7 +244,8 @@ class Calculator {
   void _onPercent() {
     // Standard calculator %: express current input as percentage of first operand
     if (_operator != null && _firstOperand != null) {
-      final current = double.tryParse(_currentInput) ?? 0;
+      final current = _pendingFormulaValue ?? double.tryParse(_currentInput) ?? 0;
+      _pendingFormulaValue = null;
       final percentValue = _firstOperand! * (current / 100);
       _currentInput = _formatNumber(percentValue);
       _waitingForSecondOperand = false;
@@ -257,6 +260,11 @@ class Calculator {
   }
 
   void _onNegate() {
+    // If a formula is inserted, convert to numeric first
+    if (_pendingFormulaValue != null) {
+      _currentInput = _formatNumber(_pendingFormulaValue!);
+      _pendingFormulaValue = null;
+    }
     if (_currentInput == '0' || _currentInput.isEmpty) return;
     if (_currentInput.startsWith('-')) {
       _currentInput = _currentInput.substring(1);
@@ -348,5 +356,6 @@ class Calculator {
     _justEvaluated = false;
     _lastExpression = '';
     _lastResult = null;
+    _pendingFormulaValue = null;
   }
 }

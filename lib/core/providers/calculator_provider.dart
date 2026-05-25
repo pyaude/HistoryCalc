@@ -55,11 +55,11 @@ class CalculatorNotifier extends StateNotifier<CalculatorState> {
     }
   }
 
-  /// Insert the result of a history entry into the current expression.
+  /// Insert a history entry's formula into the current expression.
   void insertFromHistory(int index) {
     if (index < 0 || index >= state.history.length) return;
     final entry = state.history[index];
-    _calc.insertResult(entry.result);
+    _calc.insertFormula(entry.expression, entry.result);
     _syncFromEngine();
   }
 

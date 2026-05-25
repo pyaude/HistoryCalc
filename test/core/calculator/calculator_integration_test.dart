@@ -27,7 +27,7 @@ void main() {
       expect(first!.result, 49.9);
       expect(first.expression, '19.9 + 30');
 
-      // Second: use insertResult from "history" = 49.9
+      // Second: continue from result
       calc.input('+');
       calc.input('1');
       calc.input('0');
@@ -104,12 +104,12 @@ void main() {
       expect(calc.currentInput, '20');
     });
 
-    test('场景: insertResult 在表达式中间', () {
+    test('场景: insertFormula 在表达式中间', () {
       calc.input('1');
       calc.input('0');
       calc.input('+');
-      // Insert 5 from history
-      calc.insertResult(5);
+      // Insert formula from history
+      calc.insertFormula('5', 5);
       expect(calc.currentInput, '5');
       expect(calc.expression, '10 + 5');
 
@@ -185,26 +185,27 @@ void main() {
       // Should not have generated a history entry
     });
 
-    test('insertResult 替换刚计算的结果', () {
+    test('insertFormula 替换刚计算的结果', () {
       calc.input('1');
       calc.input('+');
       calc.input('1');
       calc.input('=');
-      calc.insertResult(99);
+      calc.insertFormula('99', 99);
       expect(calc.currentInput, '99');
       expect(calc.expression, '99');
     });
 
-    test('= 后按运算符再插历史 → 参与计算', () {
+    test('= 后按运算符再插历史公式 → 参与计算', () {
       calc.input('2');
       calc.input('+');
       calc.input('3');
       calc.input('=');        // 5
       calc.input('×');        // 延续: 5 × ...
-      calc.insertResult(4);   // 插入历史结果4 → "5 × 4"
-      expect(calc.expression, '5 × 4');
+      calc.insertFormula('2 + 2', 4);
+      // 显示算式 "5 × 2 + 2"，计算用结果值 4
+      expect(calc.expression, '5 × 2 + 2');
       calc.input('=');
-      expect(calc.currentInput, '20');
+      expect(calc.currentInput, '20'); // 5 × 4 = 20
     });
   });
 }
