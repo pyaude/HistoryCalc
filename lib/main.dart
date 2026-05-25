@@ -29,7 +29,7 @@ class HistoryCalcApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
-      title: 'HistoryCalc',
+      title: 'HistoryCalc v2',
       theme: AppTheme.darkTheme,
       home: const CalculatorScreen(),
       debugShowCheckedModeBanner: false,

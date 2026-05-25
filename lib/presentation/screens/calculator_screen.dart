@@ -134,6 +134,14 @@ class CalculatorScreen extends ConsumerWidget {
                             fontFamily: 'Inter',
                           ),
                         ),
+                        Text(
+                          ' · v2',
+                          style: TextStyle(
+                            color: AppColors.accentGreen.withValues(alpha: 0.4),
+                            fontSize: 11,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
                         if (state.history.isNotEmpty) ...[
                           const SizedBox(width: 8),
                           Container(
