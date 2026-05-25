@@ -53,17 +53,33 @@ class HistoryDrawer extends StatelessWidget {
                     fontFamily: 'Inter',
                   ),
                 ),
-                if (history.isNotEmpty)
-                  TextButton(
-                    onPressed: onClearAll,
-                    child: Text(
-                      '清空',
-                      style: TextStyle(
-                        color: AppColors.redApproval.withValues(alpha: 0.8),
-                        fontSize: 14,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (history.isNotEmpty)
+                      TextButton(
+                        onPressed: onClearAll,
+                        child: Text(
+                          '清空',
+                          style: TextStyle(
+                            color: AppColors.redApproval.withValues(alpha: 0.8),
+                            fontSize: 14,
+                          ),
+                        ),
                       ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(
+                        Icons.close,
+                        size: 22,
+                        color: AppColors.textSecondary.withValues(alpha: 0.6),
+                      ),
+                      splashRadius: 20,
+                      tooltip: '关闭',
                     ),
-                  ),
+                  ],
+                ),
               ],
             ),
           ),
