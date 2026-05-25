@@ -95,69 +95,92 @@ class HistoryDrawer extends StatelessWidget {
                     ),
                   ),
                 )
-              : ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  itemCount: history.length,
-                  separatorBuilder: (_, __) =>
-                      Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
-                  itemBuilder: (context, index) {
-                    final entry = history[index];
-                    return InkWell(
-                      onTap: () => onEntryTap(index),
-                      borderRadius: BorderRadius.circular(12),
-                      splashColor: AppColors.accentGreen.withValues(alpha: 0.1),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 14,
-                          horizontal: 8,
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                entry.expression,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: AppColors.textSecondary,
-                                  fontFamily: 'Inter',
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.accentGreen.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                _formatResult(entry.result),
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.accentGreen,
-                                  fontFamily: 'Inter',
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              Icons.arrow_back_ios,
-                              size: 14,
-                              color: AppColors.textSecondary.withValues(alpha: 0.5),
-                            ),
-                          ],
+              : Column(
+                  children: [
+                    // Hint
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        '点击结果将其插入当前计算',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary.withValues(alpha: 0.5),
+                          fontFamily: 'Inter',
                         ),
                       ),
-                    );
-                  },
+                    ),
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      itemCount: history.length,
+                      separatorBuilder: (_, __) =>
+                          Divider(color: Colors.white.withValues(alpha: 0.06), height: 1),
+                      itemBuilder: (context, index) {
+                        final entry = history[index];
+                        return InkWell(
+                          onTap: () => onEntryTap(index),
+                          borderRadius: BorderRadius.circular(12),
+                          splashColor: AppColors.accentGreen.withValues(alpha: 0.1),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 8,
+                            ),
+                            child: Row(
+                              children: [
+                                // Result — prominent, actionable
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.accentGreen.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        _formatResult(entry.result),
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.accentGreen,
+                                          fontFamily: 'Inter',
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Icon(
+                                        Icons.add_circle_outline,
+                                        size: 18,
+                                        color: AppColors.accentGreen.withValues(alpha: 0.6),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                // Expression — secondary info
+                                Expanded(
+                                  child: Text(
+                                    entry.expression,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.textSecondary.withValues(alpha: 0.6),
+                                      fontFamily: 'Inter',
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
           // Bottom safe padding
           SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
